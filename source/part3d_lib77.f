@@ -708,40 +708,78 @@ c find magnetic field
      1yz(2,nn,mp,ll,m) + dx1*bxyz(2,np,mp,ll,m)) + dzp*(amx*bxyz(2,nn,mm
      2,lp,m) + amy*bxyz(2,np,mm,lp,m) + dyp*bxyz(2,nn,mp,lp,m) + dx1*bxy
      3z(2,np,mp,lp,m))
+      oz = amz*(amx*bxyz(3,nn,mm,ll,m) + amy*bxyz(3,np,mm,ll,m) + dyp*bx
+     1yz(3,nn,mp,ll,m) + dx1*bxyz(3,np,mp,ll,m)) + dzp*(amx*bxyz(3,nn,mm
+     2,lp,m) + amy*bxyz(3,np,mm,lp,m) + dyp*bxyz(3,nn,mp,lp,m) + dx1*bxy
+     3z(3,np,mp,lp,m))
      
-      dx = dx - oy
-      dy = dy + ox
-
-      delx = qtmh*dx
-      dely = qtmh*dy
-      delz = qtmh*dz
+c electric field
 c half acceleration
 c momentums are normalized to c temporarily
-      dx = part(4,j,m) + delx
-      dy = part(5,j,m) + dely
-      dz = part(6,j,m) + delz
-      part(4,j,m) = dx
-      part(5,j,m) = dy
+      acx = 0.5*qtmh*dx
+      acy = 0.5*qtmh*dy
+      acz = 0.5*qtmh*dz
+      
+      ux = part(4,j,m) + acx
+      uy = part(5,j,m) + acy
+      uz = part(6,j,m) + acz
+
 c update gamma and inverse gamma
-      p2t = dx*dx + dy*dy
-      p2l = dz*dz
+      p2t = ux*ux + uy*uy
+      p2l = uz*uz
+      p2 = p2t + p2l 
+      ngamma = sqrt(1.0 + p2)
+
+c magnetic field      
+c calculate rotation matrix
+      qtmh_gamma = qtmh/ngamma
+      omxt_gamma = qtmh_gamma*ox
+      omyt_gamma = qtmh_gamma*oy
+      omzt_gamma = qtmh_gamma*oz
+      squ_omt_gamma = omxt_gamma*omxt_gamma + omyt_gamma*omyt_gamma + omzt_gamma*omzt_gamma
+      
+      term1 = 1 - 0.25*squ_omt_gamma
+      rot1_x = term1*ux
+      rot1_y = term1*uy
+      rot1_z = term1*uz
+      
+      rot2_x = uy*omzt_gamma - uz*omyt_gamma
+      rot2_y = -ux*omzt_gamma + uz*omxt_gamma
+      rot2_z = ux*omyt_gamma - uy*omxt_gamma
+      
+      term2 = 0.5*(ux*omxt_gamma + uy*omyt_gamma + uz*omzt_gamma)
+      rot3_x = term2*omxt_gamma
+      rot3_y = term2*omyt_gamma
+      rot3_z = term2*omzt_gamma
+      term3 = 1 + 0.25*squ_omt_gamma
+      
+      ux = (rot1_x + rot2_x + rot3_x)/term3
+      uy = (rot1_y + rot2_y + rot3_y)/term3
+      uz = (rot1_z + rot2_z + rot3_z)/term3
+
+c electric field      
+c half acceleration
+      ux = ux + acx
+      uy = uy + acy
+      uz = uz + acz      
+
+      part(4,j,m) = ux
+      part(5,j,m) = uy
+      part(6,j,m) = uz
+
+c update gamma and inverse gamma
+      p2t = ux*ux + uy*uy
+      p2l = uz*uz
       p2 = p2t + p2l 
       ngamma = sqrt(1.0 + p2)
       dtgx = dtc_over_deltax/ngamma
       dtgy = dtc_over_deltax/ngamma
-      one_minus_vz = (1.0+p2t)/(dz*(dz+ngamma))
-
-c include radiation damping in the z direction      
-c note: this is not time-centered
-c      print *,"cofd1,ngamma,dz,delx,dely=",cofd1,ngamma, dz, delx, dely,&
-c     &cofd1*ngamma*((delx*delx+dely*dely)*dz-delz*(delx*dx+dely*dy))  
-      dz = dz - cofd1*ngamma*((delx*delx+dely*dely)*dz-delz*(delx*dx+del&
-     &y*dy))  
-c comment this line to shut off longitudinal push     
-      part(6,j,m) = dz
+c there is a small bug
+      one_minus_vz = (1.0+p2t)/(ngamma*(uz+ngamma))
+       
 c new position in grid unit
-      dx = part(1,j,m) + dx*dtgx
-      dy = part(2,j,m) + dy*dtgy
+      dx = part(1,j,m) + ux*dtgx
+      dy = part(2,j,m) + uy*dtgy
 c      dz = part(3,j,m) + (one_minus_vz - one_minus_vz0)*dtc_over_deltaz 
       dz = part(3,j,m) + one_minus_vz*dtc_over_deltaz 
 c dropping boundary conditions in x and y
