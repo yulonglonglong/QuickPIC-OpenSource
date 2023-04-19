@@ -27,7 +27,7 @@
          class(parallel_pipe), pointer, public :: p => null()
 !
 ! ndprof = profile type
-         integer :: npf, npmax
+         integer :: npf, npmax, pusher
          real, dimension(3) :: origin=(/0.0,0.0,0.0/)
          logical :: evol = .true., static = .false.
                          
@@ -39,7 +39,7 @@
          procedure(ab_init_fdist3d), deferred, private :: init_fdist3d
          procedure, private :: end_fdist3d
          procedure(ab_dist3d), deferred, private :: dist3d
-         procedure :: getnpf, getnpmax, getevol, getorigin
+         procedure :: getnpf, getnpmax, getpusher, getevol, getorigin
          procedure :: getstatic
                   
       end type 
@@ -195,6 +195,17 @@
 
       end function getnpmax
 !      
+      function getpusher(this)
+
+         implicit none
+
+         class(fdist3d), intent(in) :: this
+         integer :: getpusher
+         
+         getpusher = this%pusher
+
+      end function getpusher
+!        
       function getevol(this)
 
          implicit none
@@ -355,6 +366,9 @@
          this%quiet = quiet
          this%evol = evol
          this%static = static
+         call input%get(trim(s1)//'.pusher', this%pusher)
+
+         write(*, "(I2)") this%pusher
 
          call this%err%werrfl2(class//sname//' ended')
 
@@ -569,6 +583,9 @@
          this%quiet = quiet
          this%evol = evol
          this%static = static
+         call input%get(trim(s1)//'.pusher', this%pusher)
+
+         write(*, "(I2)") this%pusher
 
          call this%err%werrfl2(class//sname//' ended')
 
@@ -744,6 +761,9 @@
          call input%get(trim(s1)//'.peak_density',np)
          call input%get(trim(s1)//'.npmax',npmax)
          call input%get(trim(s1)//'.evolution',evol)
+         call input%get(trim(s1)//'.pusher', this%pusher)
+
+         write(*, "(I2)") this%pusher
 
          this%npf = npf
          this%npx = npx
@@ -901,6 +921,9 @@
          call input%get(trim(s1)//'.npmax',npmax)
          call input%get(trim(s1)//'.evolution',evol)
          call input%get(trim(s1)//'.file_name',this%file)
+         call input%get(trim(s1)//'.pusher', this%pusher)
+
+         write(*, "(I2)") this%pusher
 
          this%npf = npf
          this%npt = npt
@@ -1042,8 +1065,9 @@
          call input%get(trim(s1)//'.file_name', this%file)
          call input%get(trim(s1)//'.format', this%format)
          call input%get(trim(s1)//'.q_ratio', this%q_ratio)
+         call input%get(trim(s1)//'.pusher', this%pusher)
 
-
+         write(*, "(I2)") this%pusher
          call this%err%werrfl2(class//sname//' ended')
 
       end subroutine init_fdist3d_004
@@ -1215,6 +1239,9 @@
          call input%get(trim(s1)//'.npmax',npmax)
          call input%get(trim(s1)//'.r1',r1)
          call input%get(trim(s1)//'.r2',r2)
+         call input%get(trim(s1)//'.pusher', this%pusher)
+
+         write(*, "(I2)") this%pusher
 
          this%npf = npf
          this%npmax = npmax
