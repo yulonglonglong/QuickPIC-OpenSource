@@ -368,8 +368,6 @@
          this%static = static
          call input%get(trim(s1)//'.pusher', this%pusher)
 
-         write(*, "(I2)") this%pusher
-
          call this%err%werrfl2(class//sname//' ended')
 
       end subroutine init_fdist3d_000
@@ -585,8 +583,6 @@
          this%static = static
          call input%get(trim(s1)//'.pusher', this%pusher)
 
-         write(*, "(I2)") this%pusher
-
          call this%err%werrfl2(class//sname//' ended')
 
       end subroutine init_fdist3d_001
@@ -763,8 +759,6 @@
          call input%get(trim(s1)//'.evolution',evol)
          call input%get(trim(s1)//'.pusher', this%pusher)
 
-         write(*, "(I2)") this%pusher
-
          this%npf = npf
          this%npx = npx
          this%npy = npy
@@ -923,8 +917,6 @@
          call input%get(trim(s1)//'.file_name',this%file)
          call input%get(trim(s1)//'.pusher', this%pusher)
 
-         write(*, "(I2)") this%pusher
-
          this%npf = npf
          this%npt = npt
          this%npmax = npmax
@@ -1066,8 +1058,6 @@
          call input%get(trim(s1)//'.format', this%format)
          call input%get(trim(s1)//'.q_ratio', this%q_ratio)
          call input%get(trim(s1)//'.pusher', this%pusher)
-
-         write(*, "(I2)") this%pusher
          call this%err%werrfl2(class//sname//' ended')
 
       end subroutine init_fdist3d_004
@@ -1240,8 +1230,6 @@
          call input%get(trim(s1)//'.r1',r1)
          call input%get(trim(s1)//'.r2',r2)
          call input%get(trim(s1)//'.pusher', this%pusher)
-
-         write(*, "(I2)") this%pusher
 
          this%npf = npf
          this%npmax = npmax

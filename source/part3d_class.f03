@@ -106,7 +106,6 @@
          prof = pf%getnpf()
          pusher = pf%getpusher()
          this%pusher = pusher
-         write(*, "(I2)") this%pusher
 
          allocate(this%part(xdim,npmax),this%pbuff(xdim,nbmax))
          
