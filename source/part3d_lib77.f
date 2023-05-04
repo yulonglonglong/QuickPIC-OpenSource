@@ -783,6 +783,289 @@ c comment this line to shut off longitudinal push
       npp(m) = inpp
    20 continue
       return
+      end   
+c-----------------------------------------------------------------------
+      subroutine Boris_Pusher(part,fxyz,bxyz,npp,noff,qbm,dt,dtc,ek,nx,
+     1ny,nz,idimp,npmax,mnblok,nxv,nypmx,nzpmx,idds,ipbc,deltax,deltaz ,
+     2cofd)
+
+      double precision sum1
+      dimension part(idimp,npmax,mnblok)
+      dimension fxyz(3,nxv,nypmx,nzpmx,mnblok)
+      dimension bxyz(3,nxv,nypmx,nzpmx,mnblok)
+      dimension npp(mnblok), noff(idds,mnblok)
+
+      real qtmg,dtgx,dtgy,cofd
+      real delx, dely, delz, ngamma
+      real p2t,p2l, cofd1 
+      real dtc_over_deltax, dtc_over_deltaz
+      real one_minus_vz0, one_minus_vz
+
+      qtmh = qbm*dt
+      sum1 = 0.0d0
+      dtc_over_deltax = dtc/deltax
+      dtc_over_deltaz = dtc/deltaz
+
+      one_minus_vz0 = 0. 
+      cofd1 = cofd/dt
+c set boundary values
+      if (ipbc.eq.1) then
+         edgelx = 1.
+         edgely = 1.
+         edgelz = 1.
+         edgerx = float(nx-1)
+         edgery = float(ny-1)
+         edgerz = float(nz-1)
+      endif
+
+      do 20 m = 1, mnblok
+      mnoff = noff(1,m) - 1
+      lnoff = noff(2,m) - 1
+c find interpolation weights
+      inpp = npp(m)
+      do 10 j = 1, npp(m)
+      if (j.gt.inpp) exit
+   11 nn = part(1,j,m)
+      mm = part(2,j,m)
+      ll = part(3,j,m)
+      dxp = part(1,j,m) - float(nn)
+      dyp = part(2,j,m) - float(mm)
+      dzp = part(3,j,m) - float(ll)
+      nn = nn + 1
+      amx = 1. - dxp
+      amy = 1. - dyp
+      np = nn + 1
+      mm = mm - mnoff
+      dx1 = dxp*dyp
+      dyp = amx*dyp
+      mp = mm + 1
+      amx = amx*amy
+      amz = 1. - dzp
+      ll = ll - lnoff
+      amy = dxp*amy
+      lp = ll + 1
+c find electric field
+      dx = amz*(amx*fxyz(1,nn,mm,ll,m) + amy*fxyz(1,np,mm,ll,m) + dyp*fx
+     1yz(1,nn,mp,ll,m) + dx1*fxyz(1,np,mp,ll,m)) + dzp*(amx*fxyz(1,nn,mm
+     2,lp,m) + amy*fxyz(1,np,mm,lp,m) + dyp*fxyz(1,nn,mp,lp,m) + dx1*fxy
+     3z(1,np,mp,lp,m))
+      dy = amz*(amx*fxyz(2,nn,mm,ll,m) + amy*fxyz(2,np,mm,ll,m) + dyp*fx
+     1yz(2,nn,mp,ll,m) + dx1*fxyz(2,np,mp,ll,m)) + dzp*(amx*fxyz(2,nn,mm
+     2,lp,m) + amy*fxyz(2,np,mm,lp,m) + dyp*fxyz(2,nn,mp,lp,m) + dx1*fxy
+     3z(2,np,mp,lp,m))
+      dz = amz*(amx*fxyz(3,nn,mm,ll,m) + amy*fxyz(3,np,mm,ll,m) + dyp*fx
+     1yz(3,nn,mp,ll,m) + dx1*fxyz(3,np,mp,ll,m)) + dzp*(amx*fxyz(3,nn,mm
+     2,lp,m) + amy*fxyz(3,np,mm,lp,m) + dyp*fxyz(3,nn,mp,lp,m) + dx1*fxy
+     3z(3,np,mp,lp,m))
+c find magnetic field
+      ox = amz*(amx*bxyz(1,nn,mm,ll,m) + amy*bxyz(1,np,mm,ll,m) + dyp*bx
+     1yz(1,nn,mp,ll,m) + dx1*bxyz(1,np,mp,ll,m)) + dzp*(amx*bxyz(1,nn,mm
+     2,lp,m) + amy*bxyz(1,np,mm,lp,m) + dyp*bxyz(1,nn,mp,lp,m) + dx1*bxy
+     3z(1,np,mp,lp,m))
+      oy = amz*(amx*bxyz(2,nn,mm,ll,m) + amy*bxyz(2,np,mm,ll,m) + dyp*bx
+     1yz(2,nn,mp,ll,m) + dx1*bxyz(2,np,mp,ll,m)) + dzp*(amx*bxyz(2,nn,mm
+     2,lp,m) + amy*bxyz(2,np,mm,lp,m) + dyp*bxyz(2,nn,mp,lp,m) + dx1*bxy
+     3z(2,np,mp,lp,m))
+      oz = amz*(amx*bxyz(3,nn,mm,ll,m) + amy*bxyz(3,np,mm,ll,m) + dyp*bx
+     1yz(3,nn,mp,ll,m) + dx1*bxyz(3,np,mp,ll,m)) + dzp*(amx*bxyz(3,nn,mm
+     2,lp,m) + amy*bxyz(3,np,mm,lp,m) + dyp*bxyz(3,nn,mp,lp,m) + dx1*bxy
+     3z(3,np,mp,lp,m))
+     
+c electric field
+c half acceleration
+c momentums are normalized to c temporarily
+      acx = 0.5*qtmh*dx
+      acy = 0.5*qtmh*dy
+      acz = 0.5*qtmh*dz
+      
+      ux = part(4,j,m) + acx
+      uy = part(5,j,m) + acy
+      uz = part(6,j,m) + acz
+
+c update gamma and inverse gamma
+      p2t = ux*ux + uy*uy
+      p2l = uz*uz
+      p2 = p2t + p2l 
+      ngamma = sqrt(1.0 + p2)
+
+c magnetic field      
+c calculate rotation matrix
+      qtmh_gamma = qtmh/ngamma
+      omxt_gamma = qtmh_gamma*ox
+      omyt_gamma = qtmh_gamma*oy
+      omzt_gamma = qtmh_gamma*oz
+      squ_omt_gamma = omxt_gamma*omxt_gamma + omyt_gamma*omyt_gamma + omzt_gamma*omzt_gamma
+      
+      term1 = 1 - 0.25*squ_omt_gamma
+      rot1_x = term1*ux
+      rot1_y = term1*uy
+      rot1_z = term1*uz
+      
+      rot2_x = uy*omzt_gamma - uz*omyt_gamma
+      rot2_y = -ux*omzt_gamma + uz*omxt_gamma
+      rot2_z = ux*omyt_gamma - uy*omxt_gamma
+      
+      term2 = 0.5*(ux*omxt_gamma + uy*omyt_gamma + uz*omzt_gamma)
+      rot3_x = term2*omxt_gamma
+      rot3_y = term2*omyt_gamma
+      rot3_z = term2*omzt_gamma
+      term3 = 1 + 0.25*squ_omt_gamma
+      
+      ux = (rot1_x + rot2_x + rot3_x)/term3
+      uy = (rot1_y + rot2_y + rot3_y)/term3
+      uz = (rot1_z + rot2_z + rot3_z)/term3
+
+c electric field      
+c half acceleration
+      ux = ux + acx
+      uy = uy + acy
+      uz = uz + acz      
+
+      part(4,j,m) = ux
+      part(5,j,m) = uy
+      part(6,j,m) = uz
+
+c update gamma and inverse gamma
+      p2t = ux*ux + uy*uy
+      p2l = uz*uz
+      p2 = p2t + p2l 
+      ngamma = sqrt(1.0 + p2)
+      dtgx = dtc_over_deltax/ngamma
+      dtgy = dtc_over_deltax/ngamma
+c there is a small bug
+      one_minus_vz = (1.0+p2t)/(ngamma*(uz+ngamma))
+       
+c new position in grid unit
+      dx = part(1,j,m) + ux*dtgx
+      dy = part(2,j,m) + uy*dtgy
+c      dz = part(3,j,m) + (one_minus_vz - one_minus_vz0)*dtc_over_deltaz 
+      dz = part(3,j,m) + one_minus_vz*dtc_over_deltaz 
+c dropping boundary conditions in x and y
+      if (ipbc.eq.1) then
+         if ((dx.lt.edgelx).or.(dx.ge.edgerx)) then
+            if (j.eq.inpp) then
+               inpp = inpp - 1
+               exit
+            end if
+            part(:,j,m) = part(:,inpp,m)
+            inpp = inpp -1
+            goto 11
+         endif
+         if ((dy.lt.edgely).or.(dy.ge.edgery)) then
+            if (j.eq.inpp) then
+               inpp = inpp - 1
+               exit
+            end if
+            part(:,j,m) = part(:,inpp,m)
+            inpp = inpp -1
+            goto 11
+         endif
+         if ((dz.lt.edgelz).or.(dz.ge.edgerz)) then
+            if (j.eq.inpp) then
+               inpp = inpp - 1
+               exit
+            end if
+            part(:,j,m) = part(:,inpp,m)
+            inpp = inpp -1
+            goto 11
+         endif
+      endif
+c set new position
+      part(1,j,m) = dx
+      part(2,j,m) = dy
+c comment this line to shut off longitudinal push     
+      part(3,j,m) = dz
+   10 continue
+      npp(m) = inpp
+   20 continue
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine Frozen_Pusher(part,npp,dtc,nx,ny,nz,idimp,npmax,mnblok,
+     1ipbc,deltaz)
+      double precision sum1
+      dimension part(idimp,npmax,mnblok)
+      dimension npp(mnblok)
+      
+      real ngamma
+      real p2t,p2l
+      real dtc_over_deltaz
+      real one_minus_vz0, one_minus_vz
+      
+      sum1 = 0.0d0
+      dtc_over_deltaz = dtc/deltaz
+      one_minus_vz0 = 0. 
+      
+c set boundary values
+      if (ipbc.eq.1) then
+         edgelx = 1.
+         edgely = 1.
+         edgelz = 1.
+         edgerx = float(nx-1)
+         edgery = float(ny-1)
+         edgerz = float(nz-1)
+      endif      
+      
+c uniform motion
+      do 20 m = 1, mnblok
+      inpp = npp(m)
+      do 10 j = 1, npp(m)
+      if (j.gt.inpp) exit    
+   11 ux = part(4,j,m)
+      uy = part(5,j,m)
+      uz = part(6,j,m)     
+
+c update gamma and inverse gamma
+      p2t = ux*ux + uy*uy
+      p2l = uz*uz
+      p2 = p2t + p2l 
+      ngamma = sqrt(1.0 + p2)
+
+      one_minus_vz = (1.0+p2t)/(ngamma*(uz+ngamma))
+c      dz = part(3,j,m) + (one_minus_vz - one_minus_vz0)*dtc_over_deltaz 
+      dz = part(3,j,m) + one_minus_vz*dtc_over_deltaz
+      dx = part(1,j,m)
+      dy = part(2,j,m) 
+      
+c dropping boundary conditions in x and y
+      if (ipbc.eq.1) then
+         if ((dx.lt.edgelx).or.(dx.ge.edgerx)) then
+            if (j.eq.inpp) then
+               inpp = inpp - 1
+               exit
+            end if
+            part(:,j,m) = part(:,inpp,m)
+            inpp = inpp -1
+            goto 11
+         endif
+         if ((dy.lt.edgely).or.(dy.ge.edgery)) then
+            if (j.eq.inpp) then
+               inpp = inpp - 1
+               exit
+            end if
+            part(:,j,m) = part(:,inpp,m)
+            inpp = inpp -1
+            goto 11
+         endif
+         if ((dz.lt.edgelz).or.(dz.ge.edgerz)) then
+            if (j.eq.inpp) then
+               inpp = inpp - 1
+               exit
+            end if
+            part(:,j,m) = part(:,inpp,m)
+            inpp = inpp -1
+            goto 11
+         endif
+      endif
+c set new position
+      part(1,j,m) = dx
+      part(2,j,m) = dy
+c comment this line to shut off longitudinal push     
+      part(3,j,m) = dz
+   10 continue
+      npp(m) = inpp
+   20 continue
+      return
       end
 c-----------------------------------------------------------------------
       subroutine PMOVE32(part,edges,npp,sbufr,sbufl,rbufr,rbufl,ihole,pb

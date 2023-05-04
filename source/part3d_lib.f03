@@ -90,7 +90,36 @@
          dimension noff(idds,mnblok)
          end subroutine
       end interface
-!      
+!
+      interface
+         subroutine Boris_Pusher(part,fxyz,bxyz,npp,noff,qbm,dt,dtc,ek,&
+         &nx,ny,nz,idimp,npmax,mnblok,nxv,nypmx,nzpmx,idds,ipbc,deltax,d&
+         &eltaz,cofd)
+         implicit none
+         real, intent(inout) :: part
+         integer, intent(inout) :: npp
+         real, intent(inout) :: fxyz,bxyz
+         real, intent(in) :: qbm,dt,dtc,ek,deltax,deltaz,cofd
+         integer, intent(in) :: noff,nx,ny,nz,idimp,npmax,mnblok,nxv,nyp&
+         &mx,nzpmx,idds,ipbc
+         dimension part(idimp,npmax,mnblok)
+         dimension fxyz(3,nxv,nypmx,nzpmx,mnblok)
+         dimension bxyz(3,nxv,nypmx,nzpmx,mnblok)
+         dimension noff(idds,mnblok)
+         end subroutine
+      end interface
+!
+      interface
+         subroutine Frozen_Pusher(part,npp,dtc,nx,ny,nz,idimp,npmax,mnblok,ipbc,deltaz)
+         implicit none
+         real, intent(inout) :: part
+         integer, intent(inout) :: npp
+         real, intent(in) :: dtc,deltaz
+         integer, intent(in) :: nx,ny,nz,idimp,npmax,mnblok,ipbc
+         dimension part(idimp,npmax,mnblok)
+         end subroutine
+      end interface
+!     
       interface
          subroutine PMOVE32(part,edges,npp,sbufr,sbufl,rbufr,rbufl,ihole&
          &,pbuff,jsr,jsl,jss,ny,nz,kstrt,nvpy,nvpz,idimp,npmax,mblok,nbl&

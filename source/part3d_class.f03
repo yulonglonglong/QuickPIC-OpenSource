@@ -36,7 +36,7 @@
 ! part(:,:) = initial particle coordinates
 !         
          real :: qbm, dt, ci
-         integer :: npmax, nbmax, xdim, npp = 0
+         integer :: npmax, nbmax, xdim, npp = 0, pusher
          real, dimension(:,:), pointer :: part => null(), pbuff => null()
          
          contains
@@ -87,7 +87,7 @@
 
 ! local data
          character(len=18), save :: sname = 'init_part3d:'
-         integer :: noff, nxyp, nx, prof, npmax, nbmax
+         integer :: noff, nxyp, nx, prof, npmax, nbmax, pusher
                   
          this%sp => psp
          this%err => perr
@@ -104,6 +104,9 @@
          nbmax = int(0.01*this%npmax)
          this%nbmax = nbmax
          prof = pf%getnpf()
+         pusher = pf%getpusher()
+         this%pusher = pusher
+
 
          allocate(this%part(xdim,npmax),this%pbuff(xdim,nbmax))
          
@@ -195,11 +198,14 @@
          
          select case (this%sp%getinorder())
          case (1)
-            call PGBPUSH32L_QP(this%part,pef,pbf,this%npp,noff,qbm,dt,dt,ek,&
-            &nx,ny,nz,idimp,npmax,1,nxv,nypmx,nzpmx,2,ipbc,dex,dez,0.0)
-         case default
-            call PGBPUSH32L_QP(this%part,pef,pbf,this%npp,noff,qbm,dt,dt,ek,&
-            &nx,ny,nz,idimp,npmax,1,nxv,nypmx,nzpmx,2,ipbc,dex,dez,0.0)
+             call PGBPUSH32L_QP(this%part,pef,pbf,this%npp,noff,qbm,dt,dt,ek,&
+             &nx,ny,nz,idimp,npmax,1,nxv,nypmx,nzpmx,2,ipbc,dex,dez,0.0)
+         case (2)
+             call Boris_Pusher(this%part,pef,pbf,this%npp,noff,qbm,dt,dt,ek,&
+             &nx,ny,nz,idimp,npmax,1,nxv,nypmx,nzpmx,2,ipbc,dex,dez,0.0)
+         case (3)
+             call Frozen_Pusher(this%part,this%npp,dt,nx,ny,nz,idimp,npmax,1,&
+             &ipbc,dez)
          end select
 
          call this%err%werrfl2(class//sname//' ended')
