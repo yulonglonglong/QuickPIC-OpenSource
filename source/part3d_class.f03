@@ -196,7 +196,7 @@
          nxv = size(pef,2); nypmx = size(pef,3); nzpmx = size(pef,4)
          nxyzp = nxv*nypmx*nzpmx
          
-         select case (this%sp%getinorder())
+         select case (this%pusher)
          case (1)
              call PGBPUSH32L_QP(this%part,pef,pbf,this%npp,noff,qbm,dt,dt,ek,&
              &nx,ny,nz,idimp,npmax,1,nxv,nypmx,nzpmx,2,ipbc,dex,dez,0.0)
