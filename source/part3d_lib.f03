@@ -92,6 +92,24 @@
       end interface
 !
       interface
+         subroutine Simp_PusherRR(part,fxyz,bxyz,npp,noff,qbm,dt,dtc,ek,&
+         &nx,ny,nz,idimp,npmax,mnblok,nxv,nypmx,nzpmx,idds,ipbc,deltax,d&
+         &eltaz,cofd)
+         implicit none
+         real, intent(inout) :: part
+         integer, intent(inout) :: npp
+         real, intent(inout) :: fxyz,bxyz
+         real, intent(in) :: qbm,dt,dtc,ek,deltax,deltaz,cofd
+         integer, intent(in) :: noff,nx,ny,nz,idimp,npmax,mnblok,nxv,nyp&
+         &mx,nzpmx,idds,ipbc
+         dimension part(idimp,npmax,mnblok)
+         dimension fxyz(3,nxv,nypmx,nzpmx,mnblok)
+         dimension bxyz(3,nxv,nypmx,nzpmx,mnblok)
+         dimension noff(idds,mnblok)
+         end subroutine
+      end interface
+!
+      interface
          subroutine Boris_Pusher(part,fxyz,bxyz,npp,noff,qbm,dt,dtc,ek,&
          &nx,ny,nz,idimp,npmax,mnblok,nxv,nypmx,nzpmx,idds,ipbc,deltax,d&
          &eltaz,cofd)

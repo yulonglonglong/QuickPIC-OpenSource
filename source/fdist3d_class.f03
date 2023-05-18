@@ -28,6 +28,7 @@
 !
 ! ndprof = profile type
          integer :: npf, npmax, pusher
+         real :: n0
          real, dimension(3) :: origin=(/0.0,0.0,0.0/)
          logical :: evol = .true., static = .false.
                          
@@ -39,7 +40,7 @@
          procedure(ab_init_fdist3d), deferred, private :: init_fdist3d
          procedure, private :: end_fdist3d
          procedure(ab_dist3d), deferred, private :: dist3d
-         procedure :: getnpf, getnpmax, getevol, getorigin, getpusher
+         procedure :: getnpf, getnpmax, getevol, getorigin, getpusher, getn0
          procedure :: getstatic
                   
       end type 
@@ -206,6 +207,17 @@
 
       end function getpusher
 !
+      function getn0(this)
+
+         implicit none
+
+         class(fdist3d), intent(in) :: this
+         real :: getn0
+         
+         getn0 = this%n0
+         
+      end function getn0
+!
       function getevol(this)
 
          implicit none
@@ -336,6 +348,7 @@
          end if
 
          this%npf = npf
+         this%n0 = n0
          this%npx = npx
          this%npy = npy
          this%npz = npz
@@ -552,6 +565,7 @@
          end do
          this%z = (this%z-min)/dz
          this%npf = npf
+         this%n0 = n0
          this%npx = npx
          this%npy = npy
          this%npz = npz
@@ -760,6 +774,7 @@
          call input%get(trim(s1)//'.pusher', this%pusher)
 
          this%npf = npf
+         this%n0 = n0
          this%npx = npx
          this%npy = npy
          this%npz = npz
@@ -918,6 +933,7 @@
          call input%get(trim(s1)//'.pusher', this%pusher)
 
          this%npf = npf
+         this%n0 = n0
          this%npt = npt
          this%npmax = npmax
          this%bcx = bcx/dx
@@ -1031,7 +1047,12 @@
 
          write (sn,'(I3.3)') i
          s1 = 'beam('//trim(sn)//')'
-
+         
+!         write (*,'(I3.3)') i
+         call input%get('simulation.n0',this%n0)
+         
+!         write(*, "(D16.6)") this%n0
+         
          call input%get('simulation.indx',indx)
          call input%get('simulation.indy',indy)
          call input%get('simulation.indz',indz)
@@ -1233,6 +1254,7 @@
          call input%get(trim(s1)//'.pusher', this%pusher)
 
          this%npf = npf
+         this%n0 = n0
          this%npmax = npmax
          this%xppc = xppc
          this%yppc = yppc

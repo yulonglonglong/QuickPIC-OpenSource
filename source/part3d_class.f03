@@ -35,7 +35,7 @@
 ! npmax = maximum number of particles in each partition
 ! part(:,:) = initial particle coordinates
 !         
-         real :: qbm, dt, ci
+         real :: qbm, dt, ci, n0, cofd
          integer :: npmax, nbmax, xdim, npp = 0, pusher
          real, dimension(:,:), pointer :: part => null(), pbuff => null()
          
@@ -88,6 +88,7 @@
 ! local data
          character(len=18), save :: sname = 'init_part3d:'
          integer :: noff, nxyp, nx, prof, npmax, nbmax, pusher
+         real :: n0
                   
          this%sp => psp
          this%err => perr
@@ -106,7 +107,12 @@
          prof = pf%getnpf()
          pusher = pf%getpusher()
          this%pusher = pusher
-
+         n0 = pf%getn0()
+         this%n0 = n0
+         
+! cofd = 2./3.*kp*re , re = e2/mc2 = 2.8179e-15[m]
+! kp = sqrt(4*pi*re[m]*n0[cm-3]*e6)
+         this%cofd = 3.535178612150311D-19*SQRT(n0)
 
          allocate(this%part(xdim,npmax),this%pbuff(xdim,nbmax))
          
@@ -181,20 +187,22 @@
 ! local data
          real, dimension(:,:,:,:), pointer :: pef => null(), pbf => null()
          integer :: nx, ny, nz, ipbc
-         real :: qbm, dt, dtc, ek
+         real :: qbm, dt, dtc, ek, cofd
          integer, dimension(2) :: noff
          integer :: idimp, npmax, nxv, nypmx, nzpmx, nxyzp
 
          call this%err%werrfl2(class//sname//' started')
 
          pef => ef%getrf(); pbf => bf%getrf()
-         qbm = this%qbm; dt = this%dt
+         qbm = this%qbm; dt = this%dt; cofd = this%cofd
          nx = ef%getnd1(); ny = ef%getnd2(); nz = ef%getnd3()
          idimp = this%xdim; npmax = this%npmax;
          ipbc = this%sp%getpsolver()
          noff = ef%getnoff()
          nxv = size(pef,2); nypmx = size(pef,3); nzpmx = size(pef,4)
          nxyzp = nxv*nypmx*nzpmx
+         
+!         write(*, *) cofd
          
          select case (this%pusher)
          case (1)
@@ -206,6 +214,9 @@
          case (3)
              call Frozen_Pusher(this%part,this%npp,dt,nx,ny,nz,idimp,npmax,1,&
              &ipbc,dez)
+         case (4)
+             call Simp_PusherRR(this%part,pef,pbf,this%npp,noff,qbm,dt,dt,ek,&
+             &nx,ny,nz,idimp,npmax,1,nxv,nypmx,nzpmx,2,ipbc,dex,dez,cofd)
          end select
 
          call this%err%werrfl2(class//sname//' ended')
